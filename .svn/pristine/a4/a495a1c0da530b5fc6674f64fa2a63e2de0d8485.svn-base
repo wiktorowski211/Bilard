@@ -1,0 +1,222 @@
+#include <iostream>
+#include <Box2D/Box2D.h>
+#include <SFML/Graphics.hpp>
+#include <sstream>
+#include <ctime>
+#include "Ball.h"
+#include <stdio.h>
+#include <Windows.h>
+
+#define b2_velocityThreshold = 0.1;
+const int PPM = 30;
+
+using namespace std;
+struct WindowSize {
+	double x;
+	double y;
+	WindowSize(double f_x, double f_y)
+		: x(f_x)
+		, y(f_y)
+	{ }
+};
+struct body
+{
+	b2BodyDef DEF;
+	b2PolygonShape SHAPE;
+	b2FixtureDef FIX;
+	b2Body * BOD;
+	sf::RectangleShape RECT;
+};
+
+//modifies to float by BHN
+string floatToStr(float number);
+float framesPS(sf::Clock &);
+
+int main() {
+	WindowSize size(800.0, 600.0);
+	sf::RenderWindow app(sf::VideoMode(1920, 1080, 32), "Bilard");
+	b2Vec2 gravity(0.0f, 0.0f);
+	b2World world(gravity);
+
+	//Text
+	sf::Font myFont;
+	if (!myFont.loadFromFile("BAUHS93.TTF"))
+		return EXIT_FAILURE;
+	sf::Text Text("FPS", myFont);
+	Text.setCharacterSize(20);
+	Text.setFillColor(sf::Color(0, 255, 255, 255));
+	Text.setPosition(25, 25);
+	sf::Text clearInstructions("Press [Space] to reset",myFont);
+	sf::Text mouseY("Mouse Y:", myFont);
+	sf::Text mouseX("Mouse X:", myFont);
+	clearInstructions.setCharacterSize(18);
+	clearInstructions.setFillColor(sf::Color(255, 255, 255, 255));
+	clearInstructions.setPosition(25, 50);
+	mouseX.setCharacterSize(18);
+	mouseY.setCharacterSize(18);
+	mouseX.setPosition(25, 70);
+	mouseY.setPosition(25, 90);
+
+	float timeStep = 1 / 180.0f;
+	sf::Event Event = sf::Event();
+	sf::Clock Clock;
+	
+	sf::Clock fpsClock;
+	int frameNumber = 0;
+	int lastFPSFrame = 0;
+	string lastFPSDisplay;
+
+	const int balls =5 ; 
+	CBall good[balls];
+	int i = 0;
+	for (i; i < balls; i++) {
+		good[i].SetWorld(world);
+	}
+	
+	//walls
+
+	body leftWall;
+	leftWall.DEF.position.Set(160.0f / PPM, 540.0f / PPM);
+	leftWall.DEF.fixedRotation = false;
+	leftWall.RECT = sf::RectangleShape(sf::Vector2f(20, 800));
+	leftWall.RECT.setOrigin(0, 400);
+	leftWall.RECT.setFillColor(sf::Color(255, 255, 255, 255));
+	leftWall.SHAPE.SetAsBox(20.0f / PPM, 400.0f / PPM);
+	leftWall.BOD = world.CreateBody(&leftWall.DEF);
+	leftWall.FIX.shape = &leftWall.SHAPE;
+	leftWall.FIX.density = 10;
+	leftWall.FIX.friction = 100;
+	leftWall.BOD->CreateFixture(&leftWall.SHAPE, 1.0f);
+
+
+	body rightWall;
+	rightWall.DEF.position.Set(1760.0f / PPM, 540.0f / PPM);
+	rightWall.RECT = sf::RectangleShape(sf::Vector2f(20, 800));
+	rightWall.RECT.setOrigin(20, 400);
+	rightWall.RECT.setFillColor(sf::Color(255, 255, 255, 255));
+	rightWall.SHAPE.SetAsBox(20.0f / PPM, 400.0f / PPM);
+	rightWall.BOD = world.CreateBody(&rightWall.DEF);
+	rightWall.FIX.shape = &rightWall.SHAPE;
+	rightWall.FIX.density = 10;
+	rightWall.FIX.friction = 100;
+	rightWall.BOD->CreateFixture(&rightWall.SHAPE, 1.0f);
+
+	body topWall;
+	topWall.DEF.position.Set(960.0f / PPM, 140.0f / PPM);
+	topWall.RECT = sf::RectangleShape(sf::Vector2f(1600, 20));
+	topWall.RECT.setOrigin(800, 0);
+	topWall.RECT.setFillColor(sf::Color(255, 255, 255, 255));
+	topWall.SHAPE.SetAsBox(800.0f / PPM, 20.0f / PPM);
+	topWall.BOD = world.CreateBody(&topWall.DEF);
+	topWall.FIX.shape = &topWall.SHAPE;
+	topWall.FIX.density = 10;
+	topWall.FIX.friction = 100;
+	topWall.BOD->CreateFixture(&topWall.SHAPE, 1.0f);
+
+	body bottomWall;
+	bottomWall.DEF.position.Set(960.0f / PPM, 940.0f / PPM);
+	bottomWall.RECT = sf::RectangleShape(sf::Vector2f(1600, 20));
+	bottomWall.RECT.setOrigin(800, 20);
+	bottomWall.RECT.setFillColor(sf::Color(255, 255, 255, 255));
+	bottomWall.SHAPE.SetAsBox(800.0f / PPM, 20.0f / PPM);
+	bottomWall.BOD = world.CreateBody(&bottomWall.DEF);
+	bottomWall.FIX.shape = &bottomWall.SHAPE;
+	bottomWall.FIX.density = 10;
+	bottomWall.FIX.friction = 100;
+	bottomWall.BOD->CreateFixture(&bottomWall.SHAPE, 1.0f);
+
+	while (app.isOpen())
+	{
+		world.Step(timeStep, 8, 3);
+		char buff[32];
+		sprintf_s(buff, "%f", framesPS(Clock));
+		Text.setString("FPS: " + sf::String(buff));
+		sf::Vector2i position = sf::Mouse::getPosition(app);
+		mouseX.setString("Mouse X : " + std::to_string(position.x));
+		mouseY.setString("Mouse Y : " + std::to_string(position.y));
+		frameNumber++;
+		if (fpsClock.getElapsedTime().asMilliseconds() > 1000) {
+			char buf[64];
+			sprintf_s(buf, "FPS: %d\n", frameNumber - lastFPSFrame);
+			lastFPSDisplay = string(buf);
+			lastFPSFrame = frameNumber;
+			fpsClock.restart();
+			fflush(stdout);
+		}
+
+		sf::Event events;
+		while (app.pollEvent(events)) {
+			switch (events.type) {
+			case sf::Event::Closed:
+				app.close();
+				break;
+			case sf::Event::KeyPressed:
+				if (sf::Keyboard::isKeyPressed(sf::Keyboard::Space)) {
+					app.clear();
+					app.display();
+					good->setN(0);
+					for (int i = 0; i < balls; i++) {
+						good[i].ResetPosition(world);
+					}
+				}
+				else if (sf::Keyboard::isKeyPressed(sf::Keyboard::Escape))
+					app.close();
+				 else if (sf::Keyboard::isKeyPressed(sf::Keyboard::A)) {
+					 for (int i = 0; i < balls; i++) {
+						 good[i].jump(5);
+					 }
+				 }
+
+				 break;
+			}
+		}
+
+		for (int i = 0; i < balls; i++) {
+			good[i].update();
+		}
+
+		bottomWall.RECT.setPosition(bottomWall.BOD->GetPosition().x*PPM, bottomWall.BOD->GetPosition().y*PPM);
+		leftWall.RECT.setPosition(leftWall.BOD->GetPosition().x*PPM, leftWall.BOD->GetPosition().y*PPM);
+		rightWall.RECT.setPosition(rightWall.BOD->GetPosition().x*PPM, rightWall.BOD->GetPosition().y*PPM);
+		topWall.RECT.setPosition(topWall.BOD->GetPosition().x*PPM, topWall.BOD->GetPosition().y*PPM);
+		
+		app.clear();
+		app.draw(bottomWall.RECT);
+		app.draw(leftWall.RECT);
+		app.draw(rightWall.RECT);
+		app.draw(topWall.RECT);
+		app.draw(Text);
+		app.draw(mouseY);
+		app.draw(mouseX);
+		app.draw(clearInstructions);
+		for (int i = 0; i < balls; i++)
+			app.draw(good[i].GetShape());
+
+		app.display();
+	}
+
+	return 0;
+}
+
+float framesPS(sf::Clock & clock)
+{
+	bool sec = false;
+	int count = 0;
+	count++;
+	if (clock.getElapsedTime().asMilliseconds() >= 1000)
+	{
+		sec = true;
+		clock.restart();
+		count = 0;
+	}
+	float t = (float)clock.getElapsedTime().asMilliseconds();
+	float ret = 0;
+	if (t == 0) return 0;
+	else { ret = count / (float)clock.getElapsedTime().asMilliseconds(); }
+	if (sec) {
+		char buf[64];
+		sprintf_s(buf, "%f\n", ret);
+		fflush(stdout);
+	}
+	return ret;
+}

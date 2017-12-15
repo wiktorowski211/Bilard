@@ -1,0 +1,32 @@
+#pragma once
+#include <Box2D/Box2D.h>
+#include <SFML/Graphics.hpp>
+
+//i added this too, just for fun/show BHN
+class CBall
+{
+private:
+	b2Body * m_body;
+	b2BodyDef m_bodyDef;
+	b2CircleShape m_bodyShape;
+	b2FixtureDef m_bodyFix;
+	sf::CircleShape m_shape; //SFML shape
+	static int n;
+	static int x;
+	sf::Color color;
+public:
+	
+	CBall(b2World & world);
+	CBall();
+	void SetWorld(b2World & world);
+	void SetColor(sf::Color color) { m_shape.setFillColor(color); }
+	b2Body* GetBody(); // Get Box2d body
+	sf::Shape & GetShape();
+	void update(); // Get SFML shape
+	void ResetPosition(b2World & world); //this one is me too BHN resets shapes
+	void move(float angle);
+	void setN(int newN) { n = newN; }  //reset n
+	void setX(int newX) { x = newX; }
+	int getN() { return n; }
+	~CBall();
+};

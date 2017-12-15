@@ -1,0 +1,99 @@
+#include "Ball.h"
+const int PPM = 30;
+int CBall::n = 0;
+int CBall::x = 0;
+CBall::CBall(b2World & world) {
+	m_shape = sf::CircleShape(PPM);
+	m_shape.setOrigin(PPM, PPM);
+	m_shape.setFillColor(color);
+	m_bodyDef.position.Set(300.0f / PPM, 400.0f / PPM - n * 5 / PPM);
+	m_bodyDef.type = b2_dynamicBody;
+	m_bodyDef.fixedRotation = true;
+	m_bodyShape.m_p.Set(0, 0);
+	m_bodyShape.m_radius = 1.0f;
+	m_bodyFix.shape = &m_bodyShape;
+	m_bodyFix.density = 20;
+	m_bodyFix.friction = 0.3f;
+	m_bodyFix.restitution = 1.0f;
+	m_body = world.CreateBody(&m_bodyDef);
+	m_body->CreateFixture(&m_bodyFix);
+}
+
+void CBall::SetWorld(b2World & world) {
+	m_body = world.CreateBody(&m_bodyDef);
+	m_body->CreateFixture(&m_bodyFix);
+}
+
+CBall::CBall() {
+	float size = 0.75f;
+	m_shape = sf::CircleShape(size*PPM);
+	m_shape.setOrigin(size*PPM, size*PPM);
+	m_bodyDef.position.Set(300.0f / PPM, 400.0f / PPM - n * 5 / PPM);
+	n++;
+	m_bodyDef.linearDamping = 0.4f; // opór powietrza (domyœlnie 0.0f)
+	m_bodyDef.angularDamping = 1.0f;;
+	m_bodyDef.bullet = true;
+	m_bodyDef.type = b2_dynamicBody;
+	m_bodyShape.m_radius = size;
+	m_bodyFix.shape = &m_bodyShape;
+	m_bodyFix.density = 1.0f;
+	m_bodyFix.friction = 1.0f;
+	m_bodyFix.restitution = 0.95f;
+}
+
+b2Body* CBall::GetBody() {
+	return m_body;
+}
+
+sf::Shape & CBall::GetShape() {
+	return m_shape;
+}
+
+void CBall::update() {
+	m_shape.setRotation(m_body->GetAngle());
+	m_shape.setPosition(m_body->GetPosition().x*PPM, m_body->GetPosition().y*PPM);
+}
+
+void CBall::ResetPosition(b2World & world) {
+	//destroy stuff (memory management, otherwise they build up)
+	m_body->DestroyFixture(m_body->GetFixtureList());
+	world.DestroyBody(m_body);
+	
+	n++;
+	switch (x) {
+	case 1:
+		m_bodyDef.position.Set(400.0f / PPM + x * 40.0f / PPM, 690.0f / PPM - n * 50.0f / PPM);
+		break;
+	case 2:
+		m_bodyDef.position.Set(400.0f / PPM + x * 40.0f / PPM, 665.0f / PPM - n * 50.0f / PPM);
+		break;
+	case 3:
+		m_bodyDef.position.Set(400.0f / PPM + x * 40.0f / PPM, 640.0f / PPM - n * 50.0f / PPM);
+		break;
+	case 4:
+		m_bodyDef.position.Set(400.0f / PPM + x * 40.0f / PPM, 615.0f / PPM - n * 50.0f / PPM);
+		break;
+	case 5:
+		m_bodyDef.position.Set(400.0f / PPM + x * 40.0f / PPM, 590.0f / PPM - n * 50.0f / PPM);
+		break;
+	case 6:
+		m_bodyDef.position.Set(700.0f / PPM , 540.0f / PPM );
+		break;
+	}
+	m_bodyDef.angularVelocity = 0;
+	m_bodyDef.linearVelocity.Set(0, 0);
+	SetWorld(world);
+	update();
+}
+
+void CBall::move(float angle) {
+	b2Vec2 velocity;
+	velocity.y = angle;
+	velocity.x = 0.5*angle;
+	m_body->SetLinearVelocity(velocity);
+}
+
+CBall::~CBall()
+{
+}
+
